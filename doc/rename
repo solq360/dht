@@ -1,0 +1,4 @@
+dht.core (dht网格核心处理)
+========
+* protocol.bencode bencode 编解码
+* protocol.krpc 通信消息
