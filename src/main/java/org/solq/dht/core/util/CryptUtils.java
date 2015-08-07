@@ -4,7 +4,7 @@ import java.security.NoSuchAlgorithmException;
 
 public abstract class CryptUtils {
 
-	public static byte[] sha1(String source){		
+	public static byte[] SHA1(String source){		
 		try {
 			java.security.MessageDigest alga = java.security.MessageDigest.getInstance("SHA-1");
 			alga.update(source.getBytes());
