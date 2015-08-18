@@ -11,7 +11,7 @@ import java.util.Random;
 public class Key {
 	public final transient static int ID_LENGTH = 160;
 	public final transient static int LENGTH = ID_LENGTH / 8;
-
+	// private BitSet val;
 	private byte[] keyBytes;
 
 	public Key(String data) {

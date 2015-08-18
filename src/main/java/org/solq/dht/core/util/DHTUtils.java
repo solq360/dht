@@ -1,6 +1,7 @@
 package org.solq.dht.core.util;
 
 /**
+ * {@link  BitSet http://blog.csdn.net/feihong247/article/details/7849317}
  * @author solq
  */
 public abstract class DHTUtils {
