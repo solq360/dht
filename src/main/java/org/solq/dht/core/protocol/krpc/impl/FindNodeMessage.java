@@ -1,23 +1,33 @@
 package org.solq.dht.core.protocol.krpc.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.solq.dht.core.protocol.krpc.CommonMessage;
 import org.solq.dht.core.protocol.krpc.KRPCProtocol;
+import org.solq.dht.core.util.DHTUtils;
 
 /***
  * FindNode 消息
+ * 
  * @author solq
  */
 public class FindNodeMessage extends CommonMessage {
 
-	private Object target;
-	private Object senderId;
-	private Object nodes;
+	private byte[] target;
+	private byte[] senderId;
+	private List<Object> nodes;
+
+	public static FindNodeMessage ofRequest() {
+		FindNodeMessage result = new FindNodeMessage();
+		result.target = DHTUtils.randomNodeId();
+		result.senderId = DHTUtils.randomNodeId();
+		return result;
+	}
 
 	@Override
-	public String toRequestMessage() {
+	public byte[] toRequestMessage() {
 		// message = {
 		// "y": "q",
 		// "q": "find_node",
@@ -39,7 +49,7 @@ public class FindNodeMessage extends CommonMessage {
 	}
 
 	@Override
-	public String toResponseMessage() {
+	public byte[] toResponseMessage() {
 		// message = {
 		// "y": "r",
 		// "r": {

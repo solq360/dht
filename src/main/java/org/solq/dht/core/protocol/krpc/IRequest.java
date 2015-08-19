@@ -9,5 +9,5 @@ public interface IRequest extends IMessage {
 	/**
 	 * 转换成发送消息
 	 * */
-	public String toRequestMessage();
+	public byte[] toRequestMessage();
 }

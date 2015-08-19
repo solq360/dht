@@ -17,7 +17,7 @@ public class GetPeersMessage extends CommonMessage {
 	private Object nodes;
 
 	@Override
-	public String toRequestMessage() {
+	public byte[] toRequestMessage() {
 //		 message = {
 //		            "y": "q",
 //		            "q": "get_peers",
@@ -39,7 +39,7 @@ public class GetPeersMessage extends CommonMessage {
 	}
 
 	@Override
-	public String toResponseMessage() {
+	public byte[] toResponseMessage() {
 //		 message = {
 //		 "y": "r",
 //		 "r": {

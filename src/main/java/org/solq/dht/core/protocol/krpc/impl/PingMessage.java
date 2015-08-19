@@ -12,10 +12,10 @@ import org.solq.dht.core.protocol.krpc.KRPCProtocol;
  */
 public class PingMessage extends CommonMessage {
 
-	private String senderId;
-
+	private byte[] senderId;
+	private byte[] transaction;
 	@Override
-	public String toRequestMessage() {
+	public byte[] toRequestMessage() {
 		// message = {
 		// "y": "q",
 		// "q": "ping",
@@ -24,6 +24,7 @@ public class PingMessage extends CommonMessage {
 		// }
 		// }
 		Map<String, Object> message = new HashMap<>(3);
+		message.put(KRPCProtocol.HEAR_T, transaction);
 		message.put(KRPCProtocol.HEARD_Y, KRPCProtocol.HEARD_REQUEST);
 		message.put(KRPCProtocol.HEARD_Q, KRPCProtocol.REQUEST_PING);
 		Map<String, Object> body = new HashMap<>(1);
@@ -34,7 +35,7 @@ public class PingMessage extends CommonMessage {
 	}
 
 	@Override
-	public String toResponseMessage() {
+	public byte[] toResponseMessage() {
 		// message = {
 		// "y": "r",
 		// "r": {

@@ -16,8 +16,9 @@ public interface KRPCProtocol {
 	public final static String HEARD_Q = "q";
 	public final static String HEARD_A = "a";
 	public final static String HEARD_ID = "id";
+	public final static String HEAR_T = "t";
 	public final static String HEARD_TARGET = "target";
-	public final static String HEARD_TRANS_ID = "trans_id";	
+	public final static String HEARD_TRANS_ID = "trans_id";
 	public final static String HEARD_NODES = "nodes";
 	public final static String HEARD_INFO_HASH = "info_hash";
 
@@ -26,5 +27,5 @@ public interface KRPCProtocol {
 	public final static String REQUEST_PING = "ping";
 	public final static String REQUEST_FIND_NODE = "find_node";
 	public final static String REQUEST_GET_PEERS = "get_peers";
-	public final static String REQUEST_ANNOUNCE_PEER = "announce_peer";	
+	public final static String REQUEST_ANNOUNCE_PEER = "announce_peer";
 }

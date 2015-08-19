@@ -2,6 +2,8 @@ package org.solq.dht.test;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.solq.dht.core.protocol.bencode.BDecodeUtils;
+import org.solq.dht.core.protocol.krpc.impl.FindNodeMessage;
 import org.solq.dht.core.util.DHTUtils;
 
 public class TestDHTUtils {
@@ -60,4 +62,18 @@ public class TestDHTUtils {
 		String hex = "01020304050607F9";
 		Assert.assertArrayEquals(DHTUtils.hexToBytes(hex), bytes);
 	}
+
+	@Test
+	public void testbencode() {
+		byte[] requestMessage = FindNodeMessage.ofRequest().toRequestMessage();
+		System.out.println(new String(requestMessage));
+	}
+	
+	@Test
+	public void testbdecode() {
+		byte[] requestMessage = FindNodeMessage.ofRequest().toRequestMessage();
+		Object responseMessage= BDecodeUtils.bdecode(requestMessage);
+		System.out.println(requestMessage);
+	}
+
 }

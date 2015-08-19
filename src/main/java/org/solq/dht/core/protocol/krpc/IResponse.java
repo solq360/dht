@@ -9,5 +9,5 @@ public interface IResponse extends IMessage {
 	/**
 	 * 转换成影响消息
 	 * */
-	public String toResponseMessage();
+	public byte[] toResponseMessage();
 }
