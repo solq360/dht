@@ -1,12 +1,15 @@
 package org.solq.dht.test.codec;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.solq.dht.core.protocol.bencode.BDecodeUtils;
 import org.solq.dht.core.protocol.bencode.BEncodeUtils;
+import org.solq.dht.core.protocol.bencode.BObject;
 import org.solq.dht.core.protocol.krpc.KRPCProtocol;
 import org.solq.dht.core.protocol.krpc.impl.FindNodeMessage;
 import org.solq.dht.core.util.DHTUtils;
@@ -100,8 +103,13 @@ public class TestDHTUtils {
 		byte[] requestMessage = BEncodeUtils.bencode(message);
 		System.out.println(new String(requestMessage));
 
-		Object responseMessage= BDecodeUtils.bdecode(requestMessage);
-		System.out.println(requestMessage);
+		List<BObject>  responseMessage= (List<BObject> )BDecodeUtils.bdecode(requestMessage);
+		BObject o=responseMessage.get(0);
+		Map<String,Object> m=o.getValue(Map.class);
+ 		System.out.println(m.size());
+ 		for(Entry<String, Object> entry : m.entrySet()){
+ 			System.out.println(entry.getKey());
+ 		}
 	}
 	
 	

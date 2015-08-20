@@ -15,6 +15,11 @@ public class BObject {
 	public Object getValue() {
 		return value;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> T getValue(Class<T> t) {
+		return (T)value;
+	}
 
 	public Class<?> getClz() {
 		return clz;

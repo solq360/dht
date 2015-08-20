@@ -17,7 +17,7 @@ public abstract class BEncodeUtils {
 
 	public static String bencodeToString(Object o) {
 		byte[] bytes = bencode(o);
-		return new String(bytes, Charset.defaultCharset());
+		return new String(bytes, Charset.forName(BProtocol.CHAR_SET));
 	}
 
 	public static byte[] bencode(Object o) {
@@ -74,6 +74,7 @@ public abstract class BEncodeUtils {
 
 	@SuppressWarnings("unchecked")
 	static void bencode(Object o, OutputStream out) throws IOException, IllegalArgumentException {
+		System.out.println(new String( ((ByteArrayOutputStream)out).toByteArray()));
 		if (o instanceof String) {
 			bencode((String) o, out);
 		} else if (o instanceof byte[]) {
