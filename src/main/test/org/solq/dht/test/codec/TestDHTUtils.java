@@ -1,8 +1,13 @@
 package org.solq.dht.test.codec;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.solq.dht.core.protocol.bencode.BDecodeUtils;
+import org.solq.dht.core.protocol.bencode.BEncodeUtils;
+import org.solq.dht.core.protocol.krpc.KRPCProtocol;
 import org.solq.dht.core.protocol.krpc.impl.FindNodeMessage;
 import org.solq.dht.core.util.DHTUtils;
 
@@ -72,8 +77,33 @@ public class TestDHTUtils {
 	@Test
 	public void testbdecode() {
 		byte[] requestMessage = FindNodeMessage.ofRequest().toRequestMessage();
+		System.out.println(new String(requestMessage));
+
 		Object responseMessage= BDecodeUtils.bdecode(requestMessage);
 		System.out.println(requestMessage);
 	}
+	
+	@Test
+	public void testbdecode1() {
+		// {"t":"aa", "y":"q", "q":"find_node", "a": {"id":"abcdefghij0123456789", "target":"mnopqrstuvwxyz123456"}}
+		
+		Map<String, Object> message = new HashMap<>(3);
+		message.put(KRPCProtocol.HEARD_T, "aa");
+		message.put(KRPCProtocol.HEARD_Y, KRPCProtocol.HEARD_REQUEST);
+		message.put(KRPCProtocol.HEARD_Q, KRPCProtocol.REQUEST_FIND_NODE);
+		
+		Map<String, Object> body = new HashMap<>(1);
+		message.put(KRPCProtocol.HEARD_A, body);
+		body.put(KRPCProtocol.HEARD_ID, "abcdefghij0123456789");
+		body.put(KRPCProtocol.HEARD_TARGET, "mnopqrstuvwxyz123456");
+		
+		byte[] requestMessage = BEncodeUtils.bencode(message);
+		System.out.println(new String(requestMessage));
+
+		Object responseMessage= BDecodeUtils.bdecode(requestMessage);
+		System.out.println(requestMessage);
+	}
+	
+	
 
 }

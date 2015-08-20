@@ -16,7 +16,7 @@ public interface KRPCProtocol {
 	public final static String HEARD_Q = "q";
 	public final static String HEARD_A = "a";
 	public final static String HEARD_ID = "id";
-	public final static String HEAR_T = "t";
+	public final static String HEARD_T = "t";
 	public final static String HEARD_TARGET = "target";
 	public final static String HEARD_TRANS_ID = "trans_id";
 	public final static String HEARD_NODES = "nodes";

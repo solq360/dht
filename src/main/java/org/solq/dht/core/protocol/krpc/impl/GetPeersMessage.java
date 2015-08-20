@@ -35,7 +35,7 @@ public class GetPeersMessage extends CommonMessage {
 		body.put(KRPCProtocol.HEARD_ID, senderId);
 		body.put(KRPCProtocol.HEARD_INFO_HASH, info_hash);
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 	@Override
@@ -54,7 +54,7 @@ public class GetPeersMessage extends CommonMessage {
 		body.put(KRPCProtocol.HEARD_ID, senderId);
 		body.put(KRPCProtocol.HEARD_NODES, nodes);
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 }

@@ -38,14 +38,16 @@ public class FindNodeMessage extends CommonMessage {
 		// }
 
 		Map<String, Object> message = new HashMap<>(3);
+		message.put(KRPCProtocol.HEARD_T, DHTUtils.randomToString(4));
 		message.put(KRPCProtocol.HEARD_Y, KRPCProtocol.HEARD_REQUEST);
 		message.put(KRPCProtocol.HEARD_Q, KRPCProtocol.REQUEST_FIND_NODE);
+		
 		Map<String, Object> body = new HashMap<>(1);
 		message.put(KRPCProtocol.HEARD_A, body);
-		body.put(KRPCProtocol.HEARD_ID, senderId);
-		body.put(KRPCProtocol.HEARD_TARGET, target);
+		body.put(KRPCProtocol.HEARD_ID, DHTUtils.randomToString(20));
+		body.put(KRPCProtocol.HEARD_TARGET, DHTUtils.randomToString(20));
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 	@Override
@@ -64,7 +66,7 @@ public class FindNodeMessage extends CommonMessage {
 		body.put(KRPCProtocol.HEARD_ID, senderId);
 		body.put(KRPCProtocol.HEARD_NODES, nodes);
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 }

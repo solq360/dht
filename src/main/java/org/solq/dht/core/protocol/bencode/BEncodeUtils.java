@@ -15,6 +15,10 @@ import java.util.Set;
  */
 public abstract class BEncodeUtils {
 
+	public static String bencodeToString(Object o) {
+		byte[] bytes = bencode(o);
+		return new String(bytes, Charset.defaultCharset());
+	}
 
 	public static byte[] bencode(Object o) {
 		try {
@@ -26,11 +30,6 @@ public abstract class BEncodeUtils {
 		}
 	}
 
-	public static String bencodeToString(Object o) {
-		byte[] bytes = bencode(o);
-		return new String(bytes, Charset.defaultCharset());
-	}
-
 	static void bencode(String s, OutputStream out) throws IOException {
 		byte[] bs = s.getBytes(BProtocol.CHAR_SET);
 		bencode(bs, out);
@@ -38,8 +37,7 @@ public abstract class BEncodeUtils {
 
 	static void bencode(Number n, OutputStream out) throws IOException {
 		out.write(BProtocol.TYPE_INT);
-		String s = n.toString();
-		out.write(s.getBytes(BProtocol.CHAR_SET));
+		out.write(n.toString().getBytes(BProtocol.CHAR_SET));
 		out.write(BProtocol.TYPE_END);
 	}
 
@@ -66,11 +64,10 @@ public abstract class BEncodeUtils {
 	}
 
 	/***
-	 * 协议格式 : [类型字符][内容长度][分割符 : ][内容]
+	 * 协议格式 : [类型字符][内容长度][分割符 : ][内容][结束符 e]
 	 */
 	static void bencode(byte[] bs, OutputStream out) throws IOException {
-		String l = Integer.toString(bs.length);
-		out.write(l.getBytes(BProtocol.CHAR_SET));
+		out.write(Integer.toString(bs.length).getBytes(BProtocol.CHAR_SET));
 		out.write(BProtocol.TYPE_STRING_SPLITTER);
 		out.write(bs);
 	}

@@ -1,13 +1,30 @@
 package org.solq.dht.core.util;
+ 
+import java.util.Random;
 
 /**
- * {@link  BitSet http://blog.csdn.net/feihong247/article/details/7849317}
+ * {@link BitSet http://blog.csdn.net/feihong247/article/details/7849317}
+ * 
  * @author solq
  */
 public abstract class DHTUtils {
+	private final static Random rnd = new Random();
 
 	public static byte[] randomNodeId() {
 		return CryptUtils.SHA1(entropy(20));
+	}
+ 
+	public static byte[] random(int len) {
+		final byte[] b = new byte[len];
+		rnd.nextBytes(b);
+		return b;
+	}
+	
+	public static String randomToString(int len) {
+		final byte[] b = new byte[len];
+		rnd.nextBytes(b);
+		String result = bytesToHex(b);
+ 		return result;
 	}
 
 	public static long bytesToLong(byte[] bytes) {
@@ -59,7 +76,7 @@ public abstract class DHTUtils {
 	public static String entropy(int len) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < len; i++) {
-			sb.append((char) betweenInt(0, 255, true));
+			sb.append((char) betweenInt(0, 255, false));
 		}
 		return sb.toString();
 	}

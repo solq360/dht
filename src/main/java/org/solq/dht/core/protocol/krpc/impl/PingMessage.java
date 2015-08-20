@@ -24,14 +24,14 @@ public class PingMessage extends CommonMessage {
 		// }
 		// }
 		Map<String, Object> message = new HashMap<>(3);
-		message.put(KRPCProtocol.HEAR_T, transaction);
+		message.put(KRPCProtocol.HEARD_T, transaction);
 		message.put(KRPCProtocol.HEARD_Y, KRPCProtocol.HEARD_REQUEST);
 		message.put(KRPCProtocol.HEARD_Q, KRPCProtocol.REQUEST_PING);
 		Map<String, Object> body = new HashMap<>(1);
 		message.put(KRPCProtocol.HEARD_A, body);
 		body.put(KRPCProtocol.HEARD_ID, senderId);
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class PingMessage extends CommonMessage {
 		message.put(KRPCProtocol.HEARD_R, body);
 		body.put(KRPCProtocol.HEARD_ID, senderId);
 
-		return toMessage(body);
+		return toMessage(message);
 	}
 
 }
