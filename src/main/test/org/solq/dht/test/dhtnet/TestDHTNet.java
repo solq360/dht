@@ -26,13 +26,19 @@ public class TestDHTNet {
 	}
 
 	public static void main(String[] args) throws IOException {
+		final int port = 9999;
 		DatagramChannel channel = DatagramChannel.open();
 		DatagramSocket socket = channel.socket();
 		channel.configureBlocking(false);
-		socket.bind(new InetSocketAddress(9999));
+		socket.bind(new InetSocketAddress(port));
+
+		System.out.println("start server : " + port);
+
 		Selector selector = Selector.open();
 		channel.register(selector, SelectionKey.OP_READ);
 		bootstrapJoinDHT(channel);
+		System.out.println("join DHT net ");
+
 		ByteBuffer byteBuffer = ByteBuffer.allocate(65536);
 		while (true) {
 			try {
@@ -65,7 +71,7 @@ public class TestDHTNet {
 		adds.forEach(add -> {
 			try {
 				byte[] message = FindNodeMessage.ofRequest().toRequestMessage();
- 				channel.send(ByteBuffer.wrap(message), add);
+				channel.send(ByteBuffer.wrap(message), add);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

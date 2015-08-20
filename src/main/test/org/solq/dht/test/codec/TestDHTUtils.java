@@ -1,4 +1,4 @@
-package org.solq.dht.test;
+package org.solq.dht.test.codec;
 
 import org.junit.Assert;
 import org.junit.Test;

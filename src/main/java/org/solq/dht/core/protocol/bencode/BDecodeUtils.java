@@ -9,8 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.solq.dht.core.protocol.bencode.codec.BEncodeUtils;
-
 /***
  * @author solq
  */
@@ -20,10 +18,10 @@ public abstract class BDecodeUtils {
 		Object value = null;
 		Class<?> clz;
 		char c = (char) is.read();
-		if (c == BEncodeUtils.INT) {
+		if (c == BProtocol.TYPE_INT) {
 			clz = Integer.class;
-			value = Integer.valueOf(BProtocol.readDataUntilToken(is, BEncodeUtils.END));
-		} else if (c == BEncodeUtils.ARRAY) {
+			value = Integer.valueOf(BProtocol.readDataUntilToken(is, BProtocol.TYPE_END));
+		} else if (c == BProtocol.TYPE_ARRAY) {
 			clz = Array.class;
 			List<BObject> _value = new LinkedList<>();
 			BObject object = null;
@@ -31,7 +29,7 @@ public abstract class BDecodeUtils {
 				_value.add(object);
 			}
 			value = _value;
-		} else if (c == BEncodeUtils.DICTIONARY) {
+		} else if (c == BProtocol.TYPE_DICTIONARY) {
 			clz = Map.class;
 			Map<String, Object> _value = new HashMap<>();
 			while (true) {
@@ -50,7 +48,7 @@ public abstract class BDecodeUtils {
 		} else if (Character.isDigit(c)) {
 			clz = String.class;
 
-			String restLength = BProtocol.readDataUntilToken(is, BEncodeUtils.STRING_SPLITTER);
+			String restLength = BProtocol.readDataUntilToken(is, BProtocol.TYPE_STRING_SPLITTER);
 			int len = Integer.valueOf(c + restLength);
 			char[] chars = new char[len];
 			int b;
@@ -63,7 +61,7 @@ public abstract class BDecodeUtils {
 				}
 			}
 			value = new String(chars);
-		} else if (c == BEncodeUtils.END) {
+		} else if (c == BProtocol.TYPE_END) {
 			return null;
 		} else if ((byte) c == -1) {
 			return null;
@@ -85,12 +83,12 @@ public abstract class BDecodeUtils {
 		}
 		return objects;
 	}
-	
-	public static Object bdecode(byte[] bytes) {	 
+
+	public static Object bdecode(byte[] bytes) {
 		return bdecode(new ByteArrayInputStream(bytes));
 	}
-	
-	public static Object bdecode(String msg) {	 
+
+	public static Object bdecode(String msg) {
 		return bdecode(msg.getBytes());
 	}
 
