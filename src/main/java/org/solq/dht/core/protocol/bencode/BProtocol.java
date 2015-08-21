@@ -2,7 +2,10 @@ package org.solq.dht.core.protocol.bencode;
 
 import java.io.IOException;
 import java.io.InputStream;
-
+/***
+ * bencode 协议常量
+ * @author solq
+ * */
 public abstract class BProtocol {
 
 	public static final char TYPE_INT = 'i';

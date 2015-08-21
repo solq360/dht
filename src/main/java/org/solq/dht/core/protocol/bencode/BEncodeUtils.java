@@ -74,7 +74,7 @@ public abstract class BEncodeUtils {
 
 	@SuppressWarnings("unchecked")
 	static void bencode(Object o, OutputStream out) throws IOException, IllegalArgumentException {
-		System.out.println(new String( ((ByteArrayOutputStream)out).toByteArray()));
+		//System.out.println(new String( ((ByteArrayOutputStream)out).toByteArray()));
 		if (o instanceof String) {
 			bencode((String) o, out);
 		} else if (o instanceof byte[]) {

@@ -1,5 +1,10 @@
 package org.solq.dht.test.codec;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +19,7 @@ import org.solq.dht.core.protocol.krpc.KRPCProtocol;
 import org.solq.dht.core.protocol.krpc.impl.FindNodeMessage;
 import org.solq.dht.core.util.DHTUtils;
 
+@SuppressWarnings("unchecked")
 public class TestDHTUtils {
 
 	// FORMAT C TYPE PYTHON TYPE STANDARD SIZE NOTES
@@ -76,42 +82,55 @@ public class TestDHTUtils {
 		byte[] requestMessage = FindNodeMessage.ofRequest().toRequestMessage();
 		System.out.println(new String(requestMessage));
 	}
-	
+
 	@Test
 	public void testbdecode() {
 		byte[] requestMessage = FindNodeMessage.ofRequest().toRequestMessage();
 		System.out.println(new String(requestMessage));
 
-		Object responseMessage= BDecodeUtils.bdecode(requestMessage);
+		Object responseMessage = BDecodeUtils.bdecode(requestMessage);
 		System.out.println(requestMessage);
 	}
-	
+
 	@Test
 	public void testbdecode1() {
-		// {"t":"aa", "y":"q", "q":"find_node", "a": {"id":"abcdefghij0123456789", "target":"mnopqrstuvwxyz123456"}}
-		
+		// {"t":"aa", "y":"q", "q":"find_node", "a":
+		// {"id":"abcdefghij0123456789", "target":"mnopqrstuvwxyz123456"}}
+
 		Map<String, Object> message = new HashMap<>(3);
 		message.put(KRPCProtocol.HEARD_T, "aa");
 		message.put(KRPCProtocol.HEARD_Y, KRPCProtocol.HEARD_REQUEST);
 		message.put(KRPCProtocol.HEARD_Q, KRPCProtocol.REQUEST_FIND_NODE);
-		
+
 		Map<String, Object> body = new HashMap<>(1);
 		message.put(KRPCProtocol.HEARD_A, body);
 		body.put(KRPCProtocol.HEARD_ID, "abcdefghij0123456789");
 		body.put(KRPCProtocol.HEARD_TARGET, "mnopqrstuvwxyz123456");
-		
+
 		byte[] requestMessage = BEncodeUtils.bencode(message);
 		System.out.println(new String(requestMessage));
 
-		List<BObject>  responseMessage= (List<BObject> )BDecodeUtils.bdecode(requestMessage);
-		BObject o=responseMessage.get(0);
-		Map<String,Object> m=o.getValue(Map.class);
- 		System.out.println(m.size());
- 		for(Entry<String, Object> entry : m.entrySet()){
- 			System.out.println(entry.getKey());
- 		}
+		List<BObject> responseMessage = (List<BObject>) BDecodeUtils.bdecode(requestMessage);
+		BObject o = responseMessage.get(0);
+		Map<String, Object> m = o.getValue(Map.class);
+		System.out.println(m.size());
+		for (Entry<String, Object> entry : m.entrySet()) {
+			System.out.println(entry.getKey());
+		}
 	}
-	
-	
+
+	@Test
+	public void parseBitTorrent() throws FileNotFoundException {
+		File file = new File(TestDHTUtils.class.getResource("test.torrent").getPath());
+		InputStream fs = new BufferedInputStream(new FileInputStream(file));
+		List<Object> responseMessage = BDecodeUtils.bdecodeToJson(fs);
+		System.out.println(responseMessage.size());
+		// BObject o=responseMessage.get(0);
+		// Map<String,Object> m=o.getValue(Map.class);
+		// System.out.println(m.size());
+		// for(Entry<String, Object> entry : m.entrySet()){
+		// System.out.println(entry.getKey());
+		// }
+	}
 
 }

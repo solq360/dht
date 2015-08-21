@@ -1,4 +1,4 @@
-package org.solq.dht.core.test;
+package org.solq.dht.test;
 
 import java.util.ArrayList;
 import java.util.List;
