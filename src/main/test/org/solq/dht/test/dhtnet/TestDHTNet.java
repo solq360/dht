@@ -66,6 +66,7 @@ public class TestDHTNet {
 		adds.add(new InetSocketAddress("router.bittorrent.com", 6881));
 		adds.add(new InetSocketAddress("dht.transmissionbt.com", 6881));
 		adds.add(new InetSocketAddress("router.utorrent.com", 6881));		
+		adds.add(new InetSocketAddress("10.10.0.1", 9999));		
 	}
 
 	static void bootstrapJoinDHT(DatagramChannel channel) {
