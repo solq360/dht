@@ -33,6 +33,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jmh.version>0.4.2</jmh.version>
 		<lucene.version>5.2.1</lucene.version>
+		<hibernate.version>3.6.10.Final</hibernate.version>
+		<spring.version>3.1.2.RELEASE</spring.version>
+
 
 		<javac.target>1.8</javac.target>
 		<uberjar.name>benchmarks</uberjar.name>
@@ -55,6 +58,38 @@
 			<artifactId>junit</artifactId>
 			<version>4.9</version>
 			<scope>test</scope>
+		</dependency>
+		<!-- db -->
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.18</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.188</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>${hibernate.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>${hibernate.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
 		</dependency>
 
 		<!-- lucene -->
@@ -80,23 +115,14 @@
 			<artifactId>lucene-highlighter</artifactId>
 			<version>${lucene.version}</version>
 		</dependency>
-		
-<!-- 		<dependency>
-			<groupId>IKAnalyzer</groupId>
-			<artifactId>IKAnalyzer</artifactId>
-			<version>5.0</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/libs/IK-Analyzer5.0.jar</systemPath>
-		</dependency> -->
 
-<!-- 		<dependency>
-			<groupId>org.ansj</groupId>
-			<artifactId>ansj_seg</artifactId>
-			<version>2.0.8</version>
-			<scope>system</scope>
+		<!-- <dependency> <groupId>IKAnalyzer</groupId> <artifactId>IKAnalyzer</artifactId> 
+			<version>5.0</version> <scope>system</scope> <systemPath>${basedir}/libs/IK-Analyzer5.0.jar</systemPath> 
+			</dependency> -->
 
-			<systemPath>${basedir}/libs/gentlyWEB-utils-1.1.jar</systemPath>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.ansj</groupId> <artifactId>ansj_seg</artifactId> 
+			<version>2.0.8</version> <scope>system</scope> <systemPath>${basedir}/libs/gentlyWEB-utils-1.1.jar</systemPath> 
+			</dependency> -->
 	</dependencies>
 
 
@@ -229,6 +255,33 @@
 					<artifactId>maven-surefire-plugin</artifactId>
 					<version>2.17</version>
 				</plugin>
+
+
+
+
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<executions>
+						<execution>
+							<goals>
+								<goal>java</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<mainClass>org.h2.tools.Server</mainClass>
+						<arguments>
+							<argument>-web</argument>
+							<argument>-webPort</argument>
+							<argument>8090</argument>
+							<argument>-browser</argument>
+						</arguments>
+					</configuration>
+				</plugin>
+
+
+
 			</plugins>
 		</pluginManagement>
 	</build>
