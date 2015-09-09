@@ -15,4 +15,10 @@ public class TestModel {
 		return id;
 	}
 
+	public static TestModel of(String id) {
+		TestModel result = new TestModel();
+		result.id = id;
+		return result;
+	}
+
 }
