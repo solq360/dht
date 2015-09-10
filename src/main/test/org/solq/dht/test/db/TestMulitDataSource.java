@@ -25,4 +25,5 @@ public class TestMulitDataSource {
 		Map<String, ClassMetadata> classMetadataMap = hibernateTemplate.getSessionFactory().getAllClassMetadata();
 		System.out.println("classMetadata size : " + classMetadataMap.size());
 	}
+
 }
