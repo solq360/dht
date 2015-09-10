@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.hibernate.SessionFactory;
+import org.solq.dht.db.config.JdbcConfig;
 import org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean;
 
 public class DbUtils {

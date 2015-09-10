@@ -19,6 +19,7 @@ import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.metadata.ClassMetadata;
+import org.solq.dht.db.model.IEntity;
 import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
 
 /**

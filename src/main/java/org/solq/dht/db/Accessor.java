@@ -6,6 +6,7 @@ import javax.persistence.EntityExistsException;
 import javax.persistence.EntityNotFoundException;
 
 import org.hibernate.exception.DataException;
+import org.solq.dht.db.model.IEntity;
 
 /***
  * 公开数据访问接口 

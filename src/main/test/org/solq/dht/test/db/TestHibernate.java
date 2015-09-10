@@ -9,11 +9,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AnnotationBinder;
 import org.hibernate.metadata.ClassMetadata;
 import org.junit.Test;
-import org.solq.dht.db.DBDriver;
 import org.solq.dht.db.DbUtils;
 import org.solq.dht.db.HibernateTemplate;
-import org.solq.dht.db.JdbcConfig;
 import org.solq.dht.db.MyInterceptor;
+import org.solq.dht.db.config.DBDriver;
+import org.solq.dht.db.config.JdbcConfig;
 import org.solq.dht.test.db.model.TestModel;
  
 //http://www.uml.org.cn/sjjm/201403141.asp
@@ -74,7 +74,7 @@ public class TestHibernate {
 		
 	 
 		Session session = hibernateTemplate.getSessionFactory().openSession();
-		//不能直接用session 操作
+ 		//不能直接用session 操作
 		//session.saveOrUpdate(TestModel.of(testId)); 
 		
 		TestModel entity = hibernateTemplate.get(TestModel.class,testId);
@@ -93,4 +93,7 @@ public class TestHibernate {
 		// AnnotationBinder.bindDefaults(mappings);
 	}
 
+	
+	
+	/////////////////////////////////http://www.iteye.com/topic/359230
 }

@@ -1,4 +1,4 @@
-package org.solq.dht.db;
+package org.solq.dht.db.config;
 
 public enum DBDriver {
 	MYSQL_INNODB("com.mysql.jdbc.Driver","org.hibernate.dialect.MySQL5InnoDBDialect"),

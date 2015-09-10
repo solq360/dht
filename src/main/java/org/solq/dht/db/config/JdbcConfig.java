@@ -1,4 +1,4 @@
-package org.solq.dht.db;
+package org.solq.dht.db.config;
 
 import java.util.Properties;
 
