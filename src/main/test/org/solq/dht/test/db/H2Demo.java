@@ -17,16 +17,16 @@ import org.junit.Test;
 public class H2Demo {
 	private Server server;
 
-	private static String port = "8082";
+	public final static String port = "8082";
 	// 内存模式 关闭连接后数据丢失
-	private static String sourceURL1 = "jdbc:h2:mem:h2db";
+	public final static String sourceURL1 = "jdbc:h2:mem:h2db";
 	// 远程内存模式
-	private static String sourceURL2 = "jdbc:h2:tcp://localhost:8082/mem:h2db";
+	public final static String sourceURL2 = "jdbc:h2:tcp://localhost:8082/mem:h2db";
 
-	private static String sourceURL3 = "jdbc:h2:tcp://localhost:8082/~/test";
+	public final static String sourceURL3 = "jdbc:h2:tcp://localhost:8082/~/test";
 
-	private String user = "root";
-	private String password = "123456";
+	public final static String user = "root";
+	public final static String password = "123456";
 
 	@Test
 	public void startServer() throws InterruptedException {
@@ -40,7 +40,7 @@ public class H2Demo {
 			stopServer();
 			throw new RuntimeException(e);
 		}
-		Thread.sleep(500000);
+		Thread.sleep(5000000);
 	}
 
 	void stopServer() {

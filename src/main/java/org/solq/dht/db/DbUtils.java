@@ -24,6 +24,7 @@ public class DbUtils {
 		dataSource.setMaxActive(1000);
 		dataSource.setMaxIdle(5);
 		dataSource.setMinIdle(1);
+		
 
 		Properties hibernateProperties = new Properties();
 		hibernateProperties.put("current_session_context_class", "thread");
@@ -39,9 +40,10 @@ public class DbUtils {
 
 		AnnotationSessionFactoryBean factoryBean = new AnnotationSessionFactoryBean();
 		factoryBean.setDataSource(dataSource);
-		factoryBean.setPackagesToScan(new String[] { "org.solq.dht.test.db.model.*" });
 		factoryBean.setHibernateProperties(hibernateProperties);
-		factoryBean.afterPropertiesSet();
+		factoryBean.setPackagesToScan(config.getScanPackages());
+ 		factoryBean.afterPropertiesSet();
+ 		//factoryBean.createDatabaseSchema();
 
 		return factoryBean.getObject();
 	}

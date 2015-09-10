@@ -20,24 +20,23 @@ public class JdbcConfig {
 
 	private String targetUrl;
 
-	// Methods
-	JdbcConfig() {
+	private String[] scanPackages;
+
+ 	JdbcConfig() {
 	}
 
-	public static JdbcConfig of(DBDriver dbDriver, String url, String user, String password) {
+	public static JdbcConfig of(DBDriver dbDriver, String url, String user, String password, String... scanPackages) {
 		JdbcConfig result = new JdbcConfig();
 		result.driverClassName = dbDriver.getDriver();
-		result.dialect =dbDriver.getDialect();
+		result.dialect = dbDriver.getDialect();
 
 		result.username = user;
 		result.password = password;
 		result.targetUrl = url;
 		result.show_sql = "false";
 		result.hbm2ddl_auto = "update";
+		result.scanPackages = scanPackages;
 
- 		// jdbc.url=jdbc:mysql://127.0.0.1/test?useUnicode=true&characterEncoding=utf-8
-		// #jdbc.url=jdbc:h2:target/db/test
- 
 		return result;
 	}
 
@@ -79,6 +78,10 @@ public class JdbcConfig {
 
 	public String getTargetUrl() {
 		return targetUrl;
+	}
+
+	public String[] getScanPackages() {
+		return scanPackages;
 	}
 
 }
