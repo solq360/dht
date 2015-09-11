@@ -52,8 +52,7 @@ public class MulitDataSource {
 		AnnotationSessionFactoryBean factoryBean = new AnnotationSessionFactoryBean();
 		factoryBean.setDataSource(dataSource);
 		factoryBean.setHibernateProperties(hibernateProperties);
-		factoryBean.setPackagesToScan(PropertiesUtil.getArrayValue(properties,
-				replaceKey("{dbName}.hibernate.scanPackages", "dbName", dbName), true));
+		factoryBean.setPackagesToScan(getArrayValue(properties, "{dbName}.hibernate.scanPackages", dbName, true));
 		factoryBean.afterPropertiesSet();
 		// factoryBean.createDatabaseSchema();
 
@@ -67,21 +66,21 @@ public class MulitDataSource {
 		hibernateProperties.put("hibernate.cache.use_second_level_cache", false);
 
 		hibernateProperties.put("hibernate.dialect",
-				PropertiesUtil.getValue(properties, replaceKey("{dbName}.hibernate.dialect", "dbName", dbName), true));
+				getStringValue(properties, "{dbName}.hibernate.dialect", dbName, true));
 		hibernateProperties.put("hibernate.show_sql",
-				PropertiesUtil.getValue(properties, replaceKey("{dbName}.hibernate.show_sql", "dbName", dbName), true));
-		hibernateProperties.put("hibernate.hbm2ddl.auto", PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.hibernate.hbm2ddl.auto", "dbName", dbName), true));
-		hibernateProperties.put("connection.autoReconnect", PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.hibernate.autoReconnect", "dbName", dbName), true));
-		hibernateProperties.put("connection.autoReconnectForPools", PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.hibernate.autoReconnectForPools", "dbName", dbName), true));
-		hibernateProperties.put("connection.is-connection-validation-required", PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.hibernate.connection-validation", "dbName", dbName), true));
+				getStringValue(properties, "{dbName}.hibernate.show_sql", dbName, true));
+		hibernateProperties.put("hibernate.hbm2ddl.auto",
+				getStringValue(properties, "{dbName}.hibernate.hbm2ddl.auto", dbName, true));
+		hibernateProperties.put("connection.autoReconnect",
+				getStringValue(properties, "{dbName}.hibernate.autoReconnect", dbName, true));
+		hibernateProperties.put("connection.autoReconnectForPools",
+				getStringValue(properties, "{dbName}.hibernate.autoReconnectForPools", dbName, true));
+		hibernateProperties.put("connection.is-connection-validation-required",
+				getStringValue(properties, "{dbName}.hibernate.connection-validation", dbName, true));
 
 		String importFile = PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.hibernate.hbm2ddl.import_files", "dbName", dbName), false);
-		if (importFile != null && importFile != "") {
+				replaceKey("{dbName}.hibernate.hbm2ddl.import_files", dbName), false);
+		if (importFile != null) {
 			hibernateProperties.put("hibernate.hbm2ddl.import_files", importFile);
 		}
 		return hibernateProperties;
@@ -90,49 +89,68 @@ public class MulitDataSource {
 	private BasicDataSource buildDataSource(String dbName, Properties properties) {
 		BasicDataSource dataSource = new BasicDataSource();
 
-		dataSource.setDriverClassName(PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.dataSource.driverClassName", "dbName", dbName), true));
-		dataSource.setUrl(
-				PropertiesUtil.getValue(properties, replaceKey("{dbName}.dataSource.url", "dbName", dbName), true));
-		dataSource.setUsername(PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.dataSource.username", "dbName", dbName), true));
-		dataSource.setPassword(PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.dataSource.password", "dbName", dbName), true));
+		dataSource.setDriverClassName(getStringValue(properties, "{dbName}.dataSource.driverClassName", dbName, true));
+		dataSource.setUrl(getStringValue(properties, "{dbName}.dataSource.url", dbName, false));
+		dataSource.setUsername(getStringValue(properties, "{dbName}.dataSource.username", dbName, false));
+		dataSource.setPassword(getStringValue(properties, "{dbName}.dataSource.password", dbName, false));
 
-		dataSource.setValidationQuery(PropertiesUtil.getValue(properties,
-				replaceKey("{dbName}.dataSource.calidationQuery", "dbName", dbName), true));
+		dataSource.setValidationQuery(getStringValue(properties, "{dbName}.dataSource.calidationQuery", dbName, true));
+		dataSource.setTimeBetweenEvictionRunsMillis(
+				getIntValue(properties, "{dbName}.dataSource.timeBetweenEvictionRunsMillis", dbName, true));
+		dataSource.setNumTestsPerEvictionRun(
+				getIntValue(properties, "{dbName}.dataSource.numTestsPerEvictionRun", dbName, true));
 
-		dataSource.setTimeBetweenEvictionRunsMillis(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.timeBetweenEvictionRunsMillis", "dbName", dbName), true));
-
-		dataSource.setNumTestsPerEvictionRun(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.numTestsPerEvictionRun", "dbName", dbName), true));
 		dataSource.setTestOnBorrow(false);
 		dataSource.setTestWhileIdle(false);
 
-		dataSource.setInitialSize(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.initialSize", "dbName", dbName), true));
-		dataSource.setMaxActive(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.maxActive", "dbName", dbName), true));
-		dataSource.setMaxIdle(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.maxIdle", "dbName", dbName), true));
-		dataSource.setMinIdle(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.minIdle", "dbName", dbName), true));
+		dataSource.setInitialSize(getIntValue(properties, "{dbName}.dataSource.initialSize", dbName, true));
+		dataSource.setMaxActive(getIntValue(properties, "{dbName}.dataSource.maxActive", dbName, true));
+		dataSource.setMaxIdle(getIntValue(properties, "{dbName}.dataSource.maxIdle", dbName, true));
+		dataSource.setMinIdle(getIntValue(properties, "{dbName}.dataSource.minIdle", dbName, true));
+		dataSource.setMaxWait(getIntValue(properties, "{dbName}.dataSource.maxWait", dbName, true));
 
-		dataSource.setMaxWait(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.maxWait", "dbName", dbName), true));
-
-		dataSource.setRemoveAbandoned(PropertiesUtil.getBooleanValue(properties,
-				replaceKey("{dbName}.dataSource.removeAbandoned", "dbName", dbName), true));
-
-		dataSource.setRemoveAbandonedTimeout(PropertiesUtil.getIntValue(properties,
-				replaceKey("{dbName}.dataSource.removeAbandonedTimeout", "dbName", dbName), true));
+		dataSource.setRemoveAbandoned(getBooleanValue(properties, "{dbName}.dataSource.removeAbandoned", dbName, true));
+		dataSource.setRemoveAbandonedTimeout(
+				getIntValue(properties, "{dbName}.dataSource.removeAbandonedTimeout", dbName, true));
 
 		return dataSource;
 	}
 
-	private static String replaceKey(String text, String key, String value) {
-		return text.replaceAll("\\{" + key + "\\}", value);
+	private static String getStringValue(Properties properties, String text, String dbName, boolean isDefault) {
+		String result = PropertiesUtil.getValue(properties, text.replaceAll("\\{dbName\\}", dbName), !isDefault);
+		if (result == null || result.trim() == "") {
+			result = PropertiesUtil.getValue(properties, text.replaceAll("\\{dbName\\}", "global"), true);
+		}
+		return result;
+	}
+
+	private static String[] getArrayValue(Properties properties, String text, String dbName, boolean isDefault) {
+		String[] result = PropertiesUtil.getArrayValue(properties, text.replaceAll("\\{dbName\\}", dbName), !isDefault);
+		if (result == null || result.length == 0) {
+			result = PropertiesUtil.getArrayValue(properties, text.replaceAll("\\{dbName\\}", "global"), true);
+		}
+		return result;
+	}
+	
+ 	private static Integer getIntValue(Properties properties, String text, String dbName, boolean isDefault) {
+		Integer result = PropertiesUtil.getIntValue(properties, text.replaceAll("\\{dbName\\}", dbName), !isDefault);
+		if (result == null) {
+			result = PropertiesUtil.getIntValue(properties, text.replaceAll("\\{dbName\\}", "global"), true);
+		}
+		return result;
+	}
+
+ 	private static Boolean getBooleanValue(Properties properties, String text, String dbName, boolean isDefault) {
+		Boolean result = PropertiesUtil.getBooleanValue(properties, text.replaceAll("\\{dbName\\}", dbName),
+				!isDefault);
+		if (result == null) {
+			result = PropertiesUtil.getBooleanValue(properties, text.replaceAll("\\{dbName\\}", "global"), true);
+		}
+		return result;
+	}
+
+	private static String replaceKey(String text, String dbName) {
+		return text.replaceAll("\\{dbName\\}", dbName);
 	}
 
 	public void setConfigs(Map<String, String> configs) {

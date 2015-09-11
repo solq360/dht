@@ -26,6 +26,22 @@ import org.junit.Test;
 import org.solq.dht.db.HibernateTemplate;
 import org.solq.dht.test.db.shards.model.ContactEntity;
 
+//http://www.cnblogs.com/RicCC/archive/2010/04/14/hibernate-shards-3-architecture.html
+//http://blog.csdn.net/bluishglc/article/details/7970268
+
+//NamingStrategy 解决方案
+//http://www.360doc.com/content/10/0901/17/1542811_50437228.shtml
+
+//guzz 解决方案 
+//https://github.com/liukaixuan/guzz
+//http://www.iteye.com/topic/787836
+
+
+
+
+//mybatis 解决方案 
+//http://blog.csdn.net/zhulin40/article/details/38705105
+
 public class TestShards {
 
 	@Test
@@ -180,8 +196,7 @@ public class TestShards {
 			c = (ContactEntity) session.get(ContactEntity.class, "31111111");
 			System.out.println(c.toString());
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+ 			e.printStackTrace();
 		} finally {
 			if (session != null)
 				session.close();
@@ -204,8 +219,7 @@ public class TestShards {
 		} catch (Exception e) {
 			if (transaction != null)
 				transaction.rollback();
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+ 			e.printStackTrace();
 		} finally {
 			if (session != null)
 				session.close();
