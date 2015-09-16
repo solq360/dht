@@ -35,7 +35,7 @@
 		<lucene.version>5.2.1</lucene.version>
 		<hibernate.version>3.6.10.Final</hibernate.version>
 		<spring.version>3.1.2.RELEASE</spring.version>
-
+		<jackson.version>2.2.3</jackson.version>
 
 		<javac.target>1.8</javac.target>
 		<uberjar.name>benchmarks</uberjar.name>
@@ -59,6 +59,12 @@
 			<version>4.9</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
 		<!-- db -->
 		<dependency>
 			<groupId>commons-dbcp</groupId>
@@ -92,6 +98,14 @@
 			<version>${spring.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-redis</artifactId>
+			<version>1.6.0.RELEASE</version>
+		</dependency>
+
+
+
 		<!-- lucene -->
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
@@ -115,8 +129,8 @@
 			<artifactId>lucene-highlighter</artifactId>
 			<version>${lucene.version}</version>
 		</dependency>
-		
-		
+
+
 		<!-- libs 包 -->
 		<dependency>
 			<groupId>hibernate</groupId>
@@ -125,7 +139,7 @@
 			<version>3.0.0</version>
 			<systemPath>${basedir}/libs/hibernate-shards.jar</systemPath>
 		</dependency>
-		
+
 
 		<!-- <dependency> <groupId>IKAnalyzer</groupId> <artifactId>IKAnalyzer</artifactId> 
 			<version>5.0</version> <scope>system</scope> <systemPath>${basedir}/libs/IK-Analyzer5.0.jar</systemPath> 

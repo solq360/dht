@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.hibernate.SessionFactory;
 import org.solq.dht.db.HibernateTemplate;
+import org.solq.dht.db.MyNamingStrategy;
 import org.solq.dht.db.model.DbMetadata;
 import org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean;
 
@@ -53,6 +54,8 @@ public class MulitDataSource {
 		factoryBean.setDataSource(dataSource);
 		factoryBean.setHibernateProperties(hibernateProperties);
 		factoryBean.setPackagesToScan(getArrayValue(properties, "{dbName}.hibernate.scanPackages", dbName, true));
+//		MyNamingStrategy ns=new MyNamingStrategy();
+//		factoryBean.setNamingStrategy(ns);
 		factoryBean.afterPropertiesSet();
 		// factoryBean.createDatabaseSchema();
 

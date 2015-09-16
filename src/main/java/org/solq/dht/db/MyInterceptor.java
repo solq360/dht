@@ -12,7 +12,7 @@ public class MyInterceptor extends EmptyInterceptor {
 	}
 
 	public java.lang.String onPrepareStatement(java.lang.String sql) {
-		//sql = sql.replaceAll(targetTableName, tempTableName);
+		sql = sql.replaceAll(targetTableName, tempTableName);
 		return sql;
 	}
 

@@ -9,6 +9,7 @@ import org.solq.dht.db.config.MulitDataSource;
 import org.solq.dht.db.model.DbMetadata;
 import org.solq.dht.test.db.model.TestModel;
 
+//http://stamen.iteye.com/blog/1907984
 public class TestMulitDataSource {
 
 	@Test
