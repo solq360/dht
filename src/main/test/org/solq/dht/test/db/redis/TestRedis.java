@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.junit.Test;
 import org.solq.dht.db.redis.RedisDao;
-import org.solq.dht.db.redis.TxlCallBack;
+import org.solq.dht.db.redis.model.LockCallBack;
+import org.solq.dht.db.redis.model.TxCallBack;
 import org.solq.dht.test.db.redis.model.Item;
 import org.solq.dht.test.db.redis.model.User;
 import org.solq.dht.test.db.redis.model.User2;
@@ -15,17 +16,27 @@ import org.springframework.data.redis.core.query.SortQueryBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import redis.clients.jedis.JedisPoolConfig;
+
 public class TestRedis {
 	private ObjectMapper objectMapper = new ObjectMapper();
 
 	public JedisConnectionFactory connect() {
+		JedisPoolConfig poolConfig = new JedisPoolConfig();
 		JedisConnectionFactory cf = new JedisConnectionFactory();
-		cf.setHostName("120.25.105.27");
+		// cf.setHostName("120.25.105.27");
+		cf.setHostName("192.168.17.129");
 		cf.setPort(6379);
-		cf.setUsePool(true);		
+		cf.setUsePool(true);
 		cf.setTimeout(1000 * 60);
+
+		cf.setPoolConfig(poolConfig);
 		cf.afterPropertiesSet();
 		return cf;
+	}
+
+	public void destroy(RedisDao<?> dao) {
+		dao.destroy();
 	}
 
 	@Test
@@ -71,8 +82,22 @@ public class TestRedis {
 	}
 
 	@Test
+	public void calDBSize() throws JsonProcessingException {
+		JedisConnectionFactory cf = connect();
+		RedisDao<User> redis = RedisDao.of(User.class, cf);
+		System.out.println(redis.getDbUseSize());
+		System.out.println(redis.getDbUseSize() / 1024);
+	}
+
+	private final static String test_item_key="item.test26";
+	@Test
 	public void testTx() throws InterruptedException {
-		int count = 20;
+		JedisConnectionFactory cf = connect();
+		RedisDao<Item> redis = RedisDao.of(Item.class, cf);
+
+ 		redis.saveOrUpdate(Item.of(test_item_key, 0));
+		
+		int count = 150;
 		Thread[] t = new Thread[count];
 		for (int i = 0; i < count; i++) {
 			t[i] = new Thread(new TaskTx());
@@ -84,21 +109,25 @@ public class TestRedis {
 			t[i].join();
 		}
 	}
+	@Test
+	public void testTxSleep() throws InterruptedException {
+		JedisConnectionFactory cf = connect();
+		RedisDao<Item> redis = RedisDao.of(Item.class, cf);
 
-//	@Test
-//	public void testSelect1() throws InterruptedException {
-//		int count = 1;
-//		Thread[] t = new Thread[count];
-//		for (int i = 0; i < count; i++) {
-//			t[i] = new Thread(new Task1());
-//		}
-//		for (int i = 0; i < count; i++) {
-//			t[i].start();
-//		}
-//		for (int i = 0; i < count; i++) {
-//			t[i].join();
-//		}
-//	}
+ 		redis.saveOrUpdate(Item.of(test_item_key, 0));
+		
+		int count = 150;
+		Thread[] t = new Thread[count];
+		for (int i = 0; i < count; i++) {
+			t[i] = new Thread(new TaskTxSleep());
+		}
+		for (int i = 0; i < count; i++) {
+			t[i].start();
+		}
+		for (int i = 0; i < count; i++) {
+			t[i].join();
+		}
+	}
 
 	@Test
 	public void testSelect() throws InterruptedException {
@@ -121,12 +150,8 @@ public class TestRedis {
 		public void run() {
 			JedisConnectionFactory cf = connect();
 			RedisDao<Item> redis = RedisDao.of(Item.class, cf);
-
-			String key = "itme.test1";
-			String key2 = "itme.test2";
-			redis.saveOrUpdate(Item.of(key, 5));
-			redis.saveOrUpdate(Item.of(key2, 10));
-			redis.tx(key, new TxlCallBack<Item>() {
+			String key = test_item_key; 			
+			redis.tx(key, new TxCallBack<Item>() {
 				@Override
 				public Item exec(Item entity) {
 					if (entity == null) {
@@ -137,7 +162,34 @@ public class TestRedis {
 				}
 			});
 			Item entity = redis.findOne(key);
-			System.out.println(entity.getCount());
+			System.out.println(Thread.currentThread() + " : " + entity.getCount());
+			destroy(redis);
+		}
+
+	}
+	class TaskTxSleep implements Runnable {
+
+		@Override
+		public void run() {
+			JedisConnectionFactory cf = connect();
+			RedisDao<Item> redis = RedisDao.of(Item.class, cf);
+			String key = test_item_key; 			
+			redis.lock(key, new LockCallBack() {
+				@Override
+				public void exec(String key) {
+					Item entity=redis.findOne(key);
+					entity.addValue();
+					redis.saveOrUpdate(entity);
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+ 						e.printStackTrace();
+					}
+				}
+			});
+			Item entity = redis.findOne(key);
+			System.out.println(Thread.currentThread() + " : " + entity.getCount());
+			destroy(redis);
 		}
 
 	}
@@ -166,6 +218,8 @@ public class TestRedis {
 			System.out.println(list.size());
 			time = System.currentTimeMillis() - begin;
 			System.out.println("select time:" + time);
+
+			destroy(redis);
 		}
 
 	}
@@ -194,6 +248,7 @@ public class TestRedis {
 			}
 			time = System.currentTimeMillis() - begin;
 			System.out.println("select time:" + time);
+			destroy(redis);
 		}
 
 	}

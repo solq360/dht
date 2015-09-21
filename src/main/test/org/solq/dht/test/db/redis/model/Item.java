@@ -1,6 +1,6 @@
 package org.solq.dht.test.db.redis.model;
 
-import org.solq.dht.db.redis.IRedisEntity;
+import org.solq.dht.db.redis.model.IRedisEntity;
 
 public class Item implements IRedisEntity {
 

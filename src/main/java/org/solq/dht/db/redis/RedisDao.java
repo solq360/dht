@@ -6,28 +6,36 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.solq.dht.db.redis.anno.LockStrategy;
+import org.solq.dht.db.redis.model.IRedisEntity;
+import org.solq.dht.db.redis.model.LockCallBack;
+import org.solq.dht.db.redis.model.TxCallBack;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 /**
- * Redis 基础dao http://shift-alt-ctrl.iteye.com/category/277626 备份问题
- * http://my.oschina.net/freegeek/blog/324410
+ * Redis 基础dao http://shift-alt-ctrl.iteye.com/category/277626 <br>
+ * 备份问题 http://my.oschina.net/freegeek/blog/324410
  * 
  * @author solq
  */
-public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
+public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, IRedisMBean {
 
 	@Autowired
 	protected JedisConnectionFactory cf;
+	@Autowired
+	protected RedisTemplate<String, ?> redis;
+	protected RedisSerializer<T> valueRedisSerializer;
 	protected Class<T> entityClass;
-	protected ValueOperations<String, T> ops;
-	protected RedisTemplate<String, T> redis;
+
+	protected LockStrategy lockStrategy;
 
 	static enum StringSerializer implements RedisSerializer<String> {
 		INSTANCE;
@@ -39,11 +47,27 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
 
 		@Override
 		public String deserialize(byte[] bytes) {
-			if (bytes.length > 0) {
-				return new String(bytes);
-			} else {
+			if (bytes == null || bytes.length == 0) {
 				return null;
 			}
+			return new String(bytes);
+		}
+	}
+
+	static enum LongSerializer implements RedisSerializer<Long> {
+		INSTANCE;
+
+		@Override
+		public byte[] serialize(Long s) {
+			return (null != s ? s.toString().getBytes() : new byte[0]);
+		}
+
+		@Override
+		public Long deserialize(byte[] bytes) {
+			if (bytes == null || bytes.length == 0) {
+				return null;
+			}
+			return Long.parseLong(new String(bytes));
 		}
 	}
 
@@ -54,37 +78,58 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
 			entityClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass())
 					.getActualTypeArguments()[0];
 		}
+		lockStrategy = entityClass.getAnnotation(LockStrategy.class);
+		valueRedisSerializer = new Jackson2JsonRedisSerializer<T>((Class<T>) entityClass);
 
-		redis = new RedisTemplate<String, T>();
-		redis.setConnectionFactory(cf);
-		redis.setKeySerializer(StringSerializer.INSTANCE);
-		redis.setValueSerializer(new Jackson2JsonRedisSerializer<T>((Class<T>) entityClass));
-		redis.afterPropertiesSet();
-		ops = redis.opsForValue();
+		if (redis == null) {
+			redis = new RedisTemplate<String, Object>();
+			redis.setConnectionFactory(cf);
+			redis.setKeySerializer(StringSerializer.INSTANCE);
+			redis.setValueSerializer(valueRedisSerializer);
+			redis.afterPropertiesSet();
+		}
 	}
 
 	public static <T extends IRedisEntity> RedisDao<T> of(Class<T> entityClass, JedisConnectionFactory cf) {
 		RedisDao<T> result = new RedisDao<T>();
-		result.cf = cf;
 		result.entityClass = entityClass;
+		result.cf = cf;
+		result.afterPropertiesSet();
+		return result;
+	}
+
+	public static <T extends IRedisEntity> RedisDao<T> of(Class<T> entityClass, JedisConnectionFactory cf,
+			RedisTemplate<String, ?> redis) {
+		RedisDao<T> result = new RedisDao<T>();
+		result.entityClass = entityClass;
+		result.cf = cf;
+		result.redis = redis;
 		result.afterPropertiesSet();
 		return result;
 	}
 
 	@Override
 	public T findOne(String key) {
-		return ops.get(key);
+		return redis.execute(new RedisCallback<T>() {
+			@Override
+			public T doInRedis(RedisConnection connection) throws DataAccessException {
+				byte[] rawKey = keySerializer(key);
+				byte[] result = connection.get(rawKey);
+				return valueDeserialize(result);
+			}
+		}, true);
 	}
-
-	// @Override
-	// public List<T> sort(SortQuery<String> query) {
-	// List<T> list = redis.sort(query);
-	// return list;
-	// }
 
 	@Override
 	public void saveOrUpdate(T entity) {
-		ops.set(entity.toId(), entity);
+		redis.execute(new RedisCallback<T>() {
+			@Override
+			public T doInRedis(RedisConnection connection) throws DataAccessException {
+				byte[] rawKey = keySerializer(entity.toId());
+				connection.set(rawKey, valueSerializer(entity));
+				return null;
+			}
+		}, true);
 	}
 
 	@Override
@@ -113,8 +158,10 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
 	}
 
 	@Override
-	public void remove(String key) {
-		redis.delete(key);
+	public void remove(String... keys) {
+		for (String key : keys) {
+			redis.delete(key);
+		}
 	}
 
 	@Override
@@ -132,10 +179,33 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
 		return redis.type(key);
 	}
 
+	@Override
+	public long getDbUseSize() {
+		return redis.execute(new RedisCallback<Long>() {
+			@Override
+			public Long doInRedis(RedisConnection connection) throws DataAccessException {
+				return connection.dbSize();
+			}
+		});
+	}
+
+	@Override
+	public void lock(String key, LockCallBack callBack) {
+		String lockKey = "_clock_" + key;
+		if (lock(lockKey)) {
+			try {
+				callBack.exec(key);
+			} finally {
+				unLock(lockKey);
+			}
+		}
+		throw new RuntimeException("time out");
+	}
+
 	// http://jimgreat.iteye.com/blog/1596058
 	// http://www.tuicool.com/articles/I32IFz
 	@Override
-	public T tx(String key, TxlCallBack<T> callBack) {
+	public T tx(String key, TxCallBack<T> callBack) {
 
 		String lockKey = "_clock_" + key;
 		if (lock(lockKey)) {
@@ -154,63 +224,71 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T> {
 		}
 
 		throw new RuntimeException("time out");
-		// return redis.execute(scb);
 	}
 
-
-
-	@SuppressWarnings("unchecked")
 	private boolean lock(String lockKey) {
 		// 处理次数
-		int times = 30;
+		int times = 25;
 		// 下次请求等侍时间
-		final int sleepTime = 50;
-		// 有限时间
-		final long expireMsecs = 1000 * 30;
-		boolean locked = false;
+		long sleepTime = 250;
+		// 最大请求等侍时间
+		final long maxWait = 2 * 1000;
+		// 有效时间
+		long expires = 1000 * 10;
+
+		if (lockStrategy != null) {
+			times = lockStrategy.times();
+			sleepTime = lockStrategy.sleepTime();
+			expires = lockStrategy.expires();
+		}
+		expires = expires / 1000;
 		final RedisConnection redisConnection = redis.getConnectionFactory().getConnection();
-		final RedisSerializer<String> rs = (RedisSerializer<String>) redis.getKeySerializer();
-		final byte[] key = rs.serialize(lockKey);
-		while (times >= 0) {
-			// 锁到期时间
-			long expires = System.currentTimeMillis() + expireMsecs + 1;
-			byte[] value = rs.serialize(String.valueOf(expires));
+		final byte[] key = keySerializer(lockKey);
+
+		int i = 0;
+		while (times-- >= 0) {
 			// 首次设置成功
-			if (redisConnection.setNX(key, value)) {
+			if (redisConnection.setNX(key, new byte[] { 0 })) {
+				// 使用系统自带管理
+				redisConnection.expire(key, expires);
 				return true;
 			}
-
-			byte[] data = redisConnection.get(key);
-			if (data == null) {
-				times--;
-				continue;
-			}
-			// 超时处理
-			String currentValueStr = rs.deserialize(data);
-			if (currentValueStr != null && Long.parseLong(currentValueStr) < System.currentTimeMillis()) {
-				data = redisConnection.getSet(key, value);
-				if (data == null) {
-					times--;
-					continue;
-				}
-				String oldValueStr = rs.deserialize(data);
-				// 申请成功
-				if (oldValueStr != null && oldValueStr.equals(currentValueStr)) {
-					locked = true;
-					return true;
-				}
-			}
-
-			try {
-				Thread.sleep(sleepTime);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			times--;
+			long t = Math.min(maxWait, sleepTime * i);
+			_await(t);
+			i++;
 		}
-		return locked;
+
+		return false;
 	}
+
+	private void _await(long sleepTime) {
+		try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void unLock(String lockKey) {
 		redis.delete(lockKey);
+	}
+
+	@Override
+	public void destroy() {
+		cf.destroy();
+	}
+
+	////////////////////// 内部方法//////////////////////////
+
+	private byte[] keySerializer(String key) {
+		return StringSerializer.INSTANCE.serialize(key);
+	}
+
+	private byte[] valueSerializer(T entity) {
+		return this.valueRedisSerializer.serialize(entity);
+	}
+
+	private T valueDeserialize(byte[] bytes) {
+		return this.valueRedisSerializer.deserialize(bytes);
 	}
 }

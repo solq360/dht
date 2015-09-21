@@ -4,16 +4,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.solq.dht.db.redis.model.IRedisEntity;
+import org.solq.dht.db.redis.model.LockCallBack;
+import org.solq.dht.db.redis.model.TxCallBack;
 import org.springframework.data.redis.connection.DataType;
 
 public interface IRedisDao<Key, T extends IRedisEntity> {
 
 	/////////////////////////事务/////////////////
-	public T tx(Key key ,TxlCallBack<T> callBack);
+	public T tx(Key key ,TxCallBack<T> callBack);
+	public void lock(Key key ,LockCallBack callBack);
 	// /////////////////////CUD/////////////////////
 	public void saveOrUpdate(T entity);
 
-	public void remove(Key key);
+	public void remove(@SuppressWarnings("unchecked") Key... keys);
 	
 	//public boolean setNX(Key key,T entity);
 
@@ -34,6 +38,9 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 	public List<T> query(String pattern);
 
 	public T findOne(Key key);
+	
+	public void destroy();
+
 
 	// public List<T> sort(SortQuery<Key> query);
 }

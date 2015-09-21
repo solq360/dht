@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.solq.dht.db.redis.IRedisEntity;
+import org.solq.dht.db.redis.model.IRedisEntity;
 
 public class User implements Serializable, IRedisEntity {
 
