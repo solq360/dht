@@ -1,9 +1,10 @@
-package org.solq.dht.db.redis;
+package org.solq.dht.db.redis.service;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.solq.dht.db.redis.event.IRedisEvent;
 import org.solq.dht.db.redis.model.IRedisEntity;
 import org.solq.dht.db.redis.model.LockCallBack;
 import org.solq.dht.db.redis.model.TxCallBack;
@@ -11,18 +12,21 @@ import org.springframework.data.redis.connection.DataType;
 
 public interface IRedisDao<Key, T extends IRedisEntity> {
 
-	/////////////////////////事务/////////////////
-	public T tx(Key key ,TxCallBack<T> callBack);
-	public void lock(Key key ,LockCallBack callBack);
+	///////////////////////// 事务/////////////////
+	public T tx(Key key, TxCallBack<T> callBack);
+
+	public void lock(Key key, LockCallBack callBack);
+
 	// /////////////////////CUD/////////////////////
-	public void saveOrUpdate(T entity);
+	@SuppressWarnings("unchecked")
+	public void saveOrUpdate(T... entitys);
 
 	public void remove(@SuppressWarnings("unchecked") Key... keys);
-	
-	//public boolean setNX(Key key,T entity);
+
+	// public boolean setNX(Key key,T entity);
 
 	/////////////////////// key生命周期管理////////////////////////////////
-	public void rename(Key oldKey, Key newKey);
+	public boolean rename(Key oldKey, Key newKey);
 
 	public Boolean move(Key key, int dbIndex);
 
@@ -38,9 +42,12 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 	public List<T> query(String pattern);
 
 	public T findOne(Key key);
-	
+
+	public T findOneForCache(Key key);
+
 	public void destroy();
 
+	public void send(IRedisEvent msg, String... channels);
 
 	// public List<T> sort(SortQuery<Key> query);
 }

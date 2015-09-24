@@ -1,4 +1,4 @@
-package org.solq.dht.db.redis;
+package org.solq.dht.db.redis.service;
 
 import javax.management.MXBean;
 
