@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.solq.dht.db.redis.event.IRedisEvent;
+import org.solq.dht.db.redis.model.CursorCallBack;
 import org.solq.dht.db.redis.model.IRedisEntity;
 import org.solq.dht.db.redis.model.LockCallBack;
 import org.solq.dht.db.redis.model.TxCallBack;
@@ -40,6 +41,9 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 	public Set<String> keys(String pattern);
 
 	public List<T> query(String pattern);
+	
+	public void cursor(String pattern,CursorCallBack<T> cb);
+	
 
 	public T findOne(Key key);
 

@@ -2,6 +2,7 @@ package org.solq.dht.db.redis.service;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.solq.dht.db.redis.anno.LockStrategy;
 import org.solq.dht.db.redis.event.IRedisEvent;
 import org.solq.dht.db.redis.event.RedisEventCode;
+import org.solq.dht.db.redis.model.CursorCallBack;
 import org.solq.dht.db.redis.model.IRedisEntity;
 import org.solq.dht.db.redis.model.LockCallBack;
 import org.solq.dht.db.redis.model.TxCallBack;
@@ -105,7 +107,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 		if (result == null) {
 			result = findOne(key);
 			if (result != null) {
-				cache.put(key, result);				
+				cache.put(key, result);
 			}
 		}
 		return result;
@@ -184,21 +186,33 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 		try {
 			return redis.keys(pattern);
 		} catch (JedisConnectionException e) {
-			return null;
+			return Collections.emptySet();
 		}
 	}
 
 	@Override
 	public List<T> query(String pattern) {
 		try {
-			Set<String> ids = redis.keys(pattern);
+			Set<String> ids = redis.keys(pattern); 
 			List<T> result = new ArrayList<>(ids.size());
 			for (String id : ids) {
 				result.add(findOne(id));
 			}
 			return result;
 		} catch (JedisConnectionException e) {
-			return null;
+			return Collections.EMPTY_LIST;
+		}
+	}
+
+	@Override
+	public void cursor(String pattern, CursorCallBack<T> cb) {
+		try {
+			Set<String> ids = redis.keys(pattern);
+			for (String id : ids) {
+				cb.exec(findOne(id));
+			}
+		} catch (JedisConnectionException e) {
+
 		}
 	}
 
