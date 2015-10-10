@@ -1,5 +1,6 @@
 package org.solq.dht.db.redis.service;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,10 +12,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.solq.dht.db.redis.anno.CacheStrategy;
 import org.solq.dht.db.redis.anno.LockStrategy;
 import org.solq.dht.db.redis.event.IRedisEvent;
 import org.solq.dht.db.redis.event.RedisEventCode;
@@ -32,6 +35,8 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+
+import com.google.common.cache.CacheBuilder;
 
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -56,7 +61,9 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
 	protected LockStrategy lockStrategy;
 
-	private Map<String, T> cache = new ConcurrentHashMap<>();
+	protected CacheStrategy cacheStrategy;
+
+	private ConcurrentMap<String, T> cache = new ConcurrentHashMap<>();
 	private Map<String, T> retryElements = new ConcurrentHashMap<>();
 	private Set<String> removeElements = new HashSet<>();
 
@@ -69,6 +76,53 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 					.getActualTypeArguments()[0];
 		}
 		lockStrategy = entityClass.getAnnotation(LockStrategy.class);
+		cacheStrategy = entityClass.getAnnotation(CacheStrategy.class);
+		if (lockStrategy == null) {
+			lockStrategy = new LockStrategy() {
+
+				@Override
+				public Class<? extends Annotation> annotationType() {
+					return LockStrategy.class;
+				}
+
+				@Override
+				public int times() {
+					return 25;
+				}
+
+				@Override
+				public long sleepTime() {
+					return 250;
+				}
+
+				@Override
+				public long expires() {
+					return 1000 * 10;
+				}
+			};
+		}
+
+		if (cacheStrategy != null) {
+			int length = cacheStrategy.lenth();
+			long expires = cacheStrategy.expires();
+
+			CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder();
+			builder.initialCapacity(16);
+			builder.concurrencyLevel(16);
+			//LRU
+			if (length > 0) {
+				builder.maximumSize(length);
+			}
+			
+			//TIME OUT
+			if (expires > 0) {
+				builder.expireAfterAccess(expires, TimeUnit.MILLISECONDS);
+				builder.expireAfterWrite(expires, TimeUnit.MILLISECONDS);
+			}
+
+			cache = (ConcurrentMap<String, T>) builder.build();
+		}
+
 		valueRedisSerializer = new Jackson3JsonRedisSerializer<T>((Class<T>) entityClass);
 
 		if (redis == null) {
@@ -103,6 +157,10 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
 	@Override
 	public T findOneForCache(String key) {
+		if (lockStrategy == null) {
+			return findOne(key);
+		}
+
 		T result = (T) cache.get(key);
 		if (result == null) {
 			result = findOne(key);
@@ -134,7 +192,9 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	@Override
 	public void saveOrUpdate(T... entitys) {
 		for (T entity : entitys) {
-			cache.put(entity.toId(), entity);
+			if (cacheStrategy != null) {
+				cache.put(entity.toId(), entity);
+			}
 			boolean ok = false;
 			try {
 				redis.execute(new RedisCallback<T>() {
@@ -193,7 +253,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	@Override
 	public List<T> query(String pattern) {
 		try {
-			Set<String> ids = redis.keys(pattern); 
+			Set<String> ids = redis.keys(pattern);
 			List<T> result = new ArrayList<>(ids.size());
 			for (String id : ids) {
 				result.add(findOne(id));
@@ -335,19 +395,14 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
 	private boolean lock(String lockKey) {
 		// 处理次数
-		int times = 25;
+		int times = lockStrategy.times();
 		// 下次请求等侍时间
-		long sleepTime = 250;
+		long sleepTime = lockStrategy.sleepTime();
+		// 有效时间
+		long expires = lockStrategy.expires();
 		// 最大请求等侍时间
 		final long maxWait = 2 * 1000;
-		// 有效时间
-		long expires = 1000 * 10;
 
-		if (lockStrategy != null) {
-			times = lockStrategy.times();
-			sleepTime = lockStrategy.sleepTime();
-			expires = lockStrategy.expires();
-		}
 		expires = expires / 1000;
 		final RedisConnection redisConnection = redis.getConnectionFactory().getConnection();
 		final byte[] key = keySerializer(lockKey);
