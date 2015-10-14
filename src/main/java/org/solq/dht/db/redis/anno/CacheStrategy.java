@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * 
  * @author solq
  */
-@Target({ ElementType.PACKAGE })
+@Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CacheStrategy {
 

@@ -10,6 +10,7 @@ import org.solq.dht.db.redis.model.LockCallBack;
 import org.solq.dht.db.redis.model.TxCallBack;
 import org.solq.dht.db.redis.service.JedisConnectionFactory;
 import org.solq.dht.db.redis.service.RedisDao;
+import org.solq.dht.db.redis.service.RedisDataSourceManager;
 import org.solq.dht.test.db.redis.model.Event;
 import org.solq.dht.test.db.redis.model.Item;
 import org.solq.dht.test.db.redis.model.User;
@@ -283,6 +284,16 @@ public class TestRedis {
 
 	redisMessageListenerContainer.destroy();
 	destroy(redis);
+    }
+    
+    @Test
+    public void testDataSource() throws Exception {
+	RedisConnectionFactory cf = connect();
+	RedisDataSourceManager redisDataSourceManager=new RedisDataSourceManager();
+	redisDataSourceManager.registerRedisConnection("test", cf);
+	TestRedisDao redis = TestRedisDao.of(redisDataSourceManager);
+	redis.afterPropertiesSet();
+	
     }
 
     class TaskConnect implements Runnable {

@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.solq.dht.db.redis.anno.CacheStrategy;
 import org.solq.dht.db.redis.anno.LockStrategy;
+import org.solq.dht.db.redis.anno.StoreStrategy;
 import org.solq.dht.db.redis.event.IRedisEvent;
 import org.solq.dht.db.redis.event.RedisEventCode;
 import org.solq.dht.db.redis.model.CursorCallBack;
@@ -28,6 +29,7 @@ import org.solq.dht.db.redis.model.TxCallBack;
 import org.solq.dht.db.redis.service.ser.Jackson3JsonRedisSerializer;
 import org.solq.dht.db.redis.service.ser.StringSerializer;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.DataType;
@@ -49,19 +51,23 @@ import redis.clients.util.SafeEncoder;
  * @author solq
  */
 @SuppressWarnings("unchecked")
-public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, IRedisMBean {
+public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, IRedisMBean, InitializingBean {
     private static Logger logger = LoggerFactory.getLogger(RedisDao.class);
 
     @Autowired
+    protected RedisDataSourceManager redisDataSourceManager;
     protected RedisConnectionFactory cf;
-    @Autowired
+
     protected RedisTemplate<String, ?> redis;
+
     protected Jackson3JsonRedisSerializer<T> valueRedisSerializer;
     protected Class<T> entityClass;
 
     protected LockStrategy lockStrategy;
 
     protected CacheStrategy cacheStrategy;
+
+    protected StoreStrategy storeStrategy;
 
     private ConcurrentMap<String, T> cache = new ConcurrentHashMap<>();
     private Map<String, T> retryElements = new ConcurrentHashMap<>();
@@ -74,8 +80,26 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    // 执行期获取java 泛型类型,class 必须要有硬文件存在
 	    entityClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 	}
+
 	lockStrategy = entityClass.getAnnotation(LockStrategy.class);
 	cacheStrategy = entityClass.getAnnotation(CacheStrategy.class);
+	storeStrategy = getClass().getAnnotation(StoreStrategy.class);
+
+	// dataSource 指定来源
+	if (cf == null) {
+	    if (redisDataSourceManager == null) {
+		throw new RuntimeException("redis redisDataSourceManager is null");
+	    }
+	    if (storeStrategy == null) {
+		throw new RuntimeException("redis storeStrategy is null");
+	    }
+	    cf = redisDataSourceManager.getRedisConnection(storeStrategy.dataSource());
+	}
+	if (cf == null) {
+	    throw new RuntimeException("RedisConnectionFactory is null");
+	}
+
+	// 默认锁策略设置
 	if (lockStrategy == null) {
 	    lockStrategy = new LockStrategy() {
 
@@ -101,6 +125,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    };
 	}
 
+	// 缓存设置
 	if (cacheStrategy != null) {
 	    int length = cacheStrategy.lenth();
 	    long expires = cacheStrategy.expires();
@@ -124,6 +149,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
 	valueRedisSerializer = new Jackson3JsonRedisSerializer<T>((Class<T>) entityClass);
 
+	// 设置redis tpl
 	if (redis == null) {
 	    redis = new RedisTemplate<String, Object>();
 	    redis.setEnableDefaultSerializer(false);
@@ -132,6 +158,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    // redis.setValueSerializer(valueRedisSerializer);
 	    redis.afterPropertiesSet();
 	}
+	// 注册监听
 	owner = UUID.randomUUID().toString();
 	TimerConnectError.register(owner, this);
     }
@@ -193,6 +220,8 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    if (cacheStrategy != null) {
 		cache.put(entity.toId(), entity);
 	    }
+
+	    // TODO 改为异步保存
 	    boolean ok = false;
 	    try {
 		redis.execute(new RedisCallback<T>() {
@@ -453,4 +482,9 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	return Jackson3JsonRedisSerializer.object2Json(entity);
     }
 
+    // get set
+
+    public void setRedisDataSourceManager(RedisDataSourceManager redisDataSourceManager) {
+	this.redisDataSourceManager = redisDataSourceManager;
+    }
 }

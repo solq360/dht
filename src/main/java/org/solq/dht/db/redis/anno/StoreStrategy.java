@@ -6,20 +6,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /***
- * 锁策略
+ * 仓库策略
  * 
  * @author solq
  */
 @Target({ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface LockStrategy {
+public @interface StoreStrategy {
 
-	/** 有效时间 */
-	long expires();
-	 
-	/** 下次请求时间 */
-	long sleepTime(); 
-
-	/** 重试处理次数 */
-	int times() default 25;
+	/** 数据来源 */
+	String dataSource();
+ 
 }

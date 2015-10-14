@@ -4,6 +4,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.annotation.PostConstruct;
 
 import org.solq.dht.db.redis.service.RedisIdHelper;
 import org.solq.dht.test.db.redis.teamframe.common.config.TeamFrameConfig;
@@ -13,6 +17,7 @@ import org.solq.dht.test.db.redis.teamframe.common.model.TeamState;
 import org.solq.dht.test.db.redis.teamframe.common.redis.TeamFrameRedis;
 import org.solq.dht.test.db.redis.teamframe.common.redis.TeamMemberRedis;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /***
  * 团队框架 server 回收队伍
@@ -20,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @author solq
  * 
  */
+@Service
 public class TeamFrameServer implements ITeamFrameServer {
 
     @Autowired
@@ -27,6 +33,18 @@ public class TeamFrameServer implements ITeamFrameServer {
 
     @Autowired
     private TeamMemberRedis teamMemberRedis;
+
+    @PostConstruct
+    private void postConstruct() {
+	Timer timer = new Timer(true);
+	timer.scheduleAtFixedRate(new TimerTask() {
+
+	    @Override
+	    public void run() {
+		scan();
+	    }
+	}, 1000 * 10, 1000 * 60 * 15);
+    }
 
     @Override
     public void scan() {
