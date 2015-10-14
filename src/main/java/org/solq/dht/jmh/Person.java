@@ -62,5 +62,8 @@ public class Person {
 		new Runner(opt).run();
 	}
 
-
+	  static String[] getArguments(String className, int nRuns, int runForMilliseconds, int nThreads) {
+		return new String[] { className, "-i", "" + nRuns, "-r", runForMilliseconds + "ms", "-t", "" + nThreads, "-w",
+				"5000ms", "-wi", "3" };
+	}
 }

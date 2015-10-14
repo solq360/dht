@@ -5,9 +5,9 @@ package org.solq.dht.db.redis.model;
  * 
  * @author solq
  */
-public interface LockCallBack {
-	/**
-	 * @parkey
-	 */
-	public void exec(String key);
+public interface LockCallBack<T> {
+    /**
+     * @parkey
+     */
+    public T exec(String key);
 }

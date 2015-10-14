@@ -16,7 +16,7 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 	///////////////////////// 事务/////////////////
 	public T tx(Key key, TxCallBack<T> callBack);
 
-	public void lock(Key key, LockCallBack callBack);
+	public <R> R lock(Key key, LockCallBack<R> callBack);
 
 	// /////////////////////CUD/////////////////////
 	@SuppressWarnings("unchecked")
