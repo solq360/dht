@@ -1,14 +1,10 @@
-package org.solq.dht.db.redis.service;
+package org.solq.dht.db.redis.model;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.solq.dht.db.redis.event.IRedisEvent;
-import org.solq.dht.db.redis.model.CursorCallBack;
-import org.solq.dht.db.redis.model.IRedisEntity;
-import org.solq.dht.db.redis.model.LockCallBack;
-import org.solq.dht.db.redis.model.TxCallBack;
 import org.springframework.data.redis.connection.DataType;
 
 public interface IRedisDao<Key, T extends IRedisEntity> {
@@ -20,12 +16,17 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 
 	// /////////////////////CUD/////////////////////
 	@SuppressWarnings("unchecked")
+	public void saveOrUpdateAsync(T... entitys);
+	
+	@SuppressWarnings("unchecked")
 	public void saveOrUpdate(T... entitys);
 
 	public void remove(@SuppressWarnings("unchecked") Key... keys);
+	
+ 	public void clearCache(String... keys);
+ 	public void clearAllCache();
 
-	// public boolean setNX(Key key,T entity);
-
+ 
 	/////////////////////// key生命周期管理////////////////////////////////
 	public boolean rename(Key oldKey, Key newKey);
 

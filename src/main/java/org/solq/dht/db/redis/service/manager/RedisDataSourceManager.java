@@ -1,4 +1,4 @@
-package org.solq.dht.db.redis.service;
+package org.solq.dht.db.redis.service.manager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,6 +6,8 @@ import java.util.Map;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 /***
+ * 数据来源管理
+ * XML 注入
  * @author solq
  */
 public class RedisDataSourceManager {

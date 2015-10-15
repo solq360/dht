@@ -23,9 +23,13 @@ import org.solq.dht.db.redis.anno.StoreStrategy;
 import org.solq.dht.db.redis.event.IRedisEvent;
 import org.solq.dht.db.redis.event.RedisEventCode;
 import org.solq.dht.db.redis.model.CursorCallBack;
+import org.solq.dht.db.redis.model.IRedisDao;
 import org.solq.dht.db.redis.model.IRedisEntity;
+import org.solq.dht.db.redis.model.IRedisMBean;
 import org.solq.dht.db.redis.model.LockCallBack;
 import org.solq.dht.db.redis.model.TxCallBack;
+import org.solq.dht.db.redis.service.manager.RedisDataSourceManager;
+import org.solq.dht.db.redis.service.manager.RedisPersistentManager;
 import org.solq.dht.db.redis.service.ser.Jackson3JsonRedisSerializer;
 import org.solq.dht.db.redis.service.ser.StringSerializer;
 import org.springframework.beans.factory.DisposableBean;
@@ -56,8 +60,8 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
     @Autowired
     protected RedisDataSourceManager redisDataSourceManager;
-    protected RedisConnectionFactory cf;
 
+    protected RedisConnectionFactory cf;
     protected RedisTemplate<String, ?> redis;
 
     protected Jackson3JsonRedisSerializer<T> valueRedisSerializer;
@@ -159,8 +163,8 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    redis.afterPropertiesSet();
 	}
 	// 注册监听
-	owner = UUID.randomUUID().toString();
-	TimerConnectError.register(owner, this);
+	owner = getClass() + "_" + entityClass +"_" + UUID.randomUUID().toString();
+	RedisPersistentManager.register(owner, this);
     }
 
     public static <T extends IRedisEntity> RedisDao<T> of(Class<T> entityClass, RedisConnectionFactory cf) {
@@ -215,13 +219,22 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
     }
 
     @Override
+    public void saveOrUpdateAsync(T... entitys) {
+	for (T entity : entitys) {
+	    if (cacheStrategy != null) {
+		cache.put(entity.toId(), entity);
+	    }
+	    retryElements.put(entity.toId(), entity);
+	}
+    }
+
+    @Override
     public void saveOrUpdate(T... entitys) {
 	for (T entity : entitys) {
 	    if (cacheStrategy != null) {
 		cache.put(entity.toId(), entity);
 	    }
 
-	    // TODO 改为异步保存
 	    boolean ok = false;
 	    try {
 		redis.execute(new RedisCallback<T>() {
@@ -245,10 +258,9 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 		}
 	    }
 	}
-
     }
 
-    void handleConnectError() {
+    public void handlePersistent() {
 	if (redis.getConnectionFactory().getConnection().isClosed()) {
 	    logger.debug("redis isClosed");
 	    return;
@@ -320,6 +332,18 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
     }
 
     @Override
+    public synchronized void clearCache(String... keys) {
+	for (String key : keys) {
+	    cache.remove(key);
+	}
+    }
+
+    @Override
+    public synchronized void clearAllCache() {
+	cache.clear();
+    }
+
+    @Override
     public <R> R lock(String key, LockCallBack<R> callBack) {
 	String lockKey = "_clock_" + key;
 	if (lock(lockKey)) {
@@ -367,8 +391,8 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
     @Override
     public void destroy() {
-	TimerConnectError.unRegister(owner);
-	handleConnectError();
+	RedisPersistentManager.unRegister(owner);
+	handlePersistent();
 	if (cf instanceof DisposableBean) {
 	    try {
 		((DisposableBean) cf).destroy();
@@ -487,4 +511,13 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
     public void setRedisDataSourceManager(RedisDataSourceManager redisDataSourceManager) {
 	this.redisDataSourceManager = redisDataSourceManager;
     }
+
+    public Class<T> getEntityClass() {
+        return entityClass;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
 }
