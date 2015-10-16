@@ -10,11 +10,19 @@ import java.lang.annotation.Target;
  * 
  * @author solq
  */
-@Target({ElementType.TYPE })
+@Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface StoreStrategy {
 
-	/** 数据来源 */
-	String dataSource();
- 
+    /** 数据来源 */
+    String dataSource();
+
+    /** crud 操作delay >0 开启 */
+    int delay() default -1;
+    
+    /** crud 重试delay >0 开启 */
+    int retryDelay() default -1;
+    
+    /** crud 操作 开启批处理 */
+    boolean fix() default false;
 }

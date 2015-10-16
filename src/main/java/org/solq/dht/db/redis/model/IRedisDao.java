@@ -16,13 +16,16 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 
 	// /////////////////////CUD/////////////////////
 	@SuppressWarnings("unchecked")
-	public void saveOrUpdateAsync(T... entitys);
+	public void saveOrUpdateSync(T... entitys);
 	
 	@SuppressWarnings("unchecked")
 	public void saveOrUpdate(T... entitys);
-
-	public void remove(@SuppressWarnings("unchecked") Key... keys);
 	
+	@SuppressWarnings("unchecked")
+	public void remove( Key... keys);
+	@SuppressWarnings("unchecked") 
+	public void removeSync(Key... keys);
+
  	public void clearCache(String... keys);
  	public void clearAllCache();
 
@@ -53,6 +56,7 @@ public interface IRedisDao<Key, T extends IRedisEntity> {
 	public void destroy();
 
 	public void send(IRedisEvent msg, String... channels);
+
 
 	// public List<T> sort(SortQuery<Key> query);
 }

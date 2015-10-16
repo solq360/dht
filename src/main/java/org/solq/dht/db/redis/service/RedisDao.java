@@ -4,11 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +32,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -74,8 +71,6 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
     protected StoreStrategy storeStrategy;
 
     private ConcurrentMap<String, T> cache = new ConcurrentHashMap<>();
-    private Map<String, T> retryElements = new ConcurrentHashMap<>();
-    private Set<String> removeElements = new HashSet<>();
 
     private String owner;
 
@@ -163,7 +158,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    redis.afterPropertiesSet();
 	}
 	// 注册监听
-	owner = getClass() + "_" + entityClass +"_" + UUID.randomUUID().toString();
+	owner = getClass() + "_" + entityClass + "_" + UUID.randomUUID().toString();
 	RedisPersistentManager.register(owner, this);
     }
 
@@ -186,7 +181,7 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
     @Override
     public T findOneForCache(String key) {
-	if (lockStrategy == null) {
+	if (cacheStrategy == null) {
 	    return findOne(key);
 	}
 
@@ -212,19 +207,43 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 		    return valueDeserialize(result);
 		}
 	    }, true);
-	} catch (JedisConnectionException e) {
-	    logger.error("{}", e);
+	} catch (Exception e) {
+	    if (!checkConnectException(e)) {
+		throw e;
+	    }
 	}
 	return result;
     }
 
     @Override
-    public void saveOrUpdateAsync(T... entitys) {
+    public void saveOrUpdateSync(T... entitys) {
 	for (T entity : entitys) {
-	    if (cacheStrategy != null) {
-		cache.put(entity.toId(), entity);
+	    boolean ok = false;
+	    try {
+		redis.execute(new RedisCallback<T>() {
+		    @Override
+		    public T doInRedis(RedisConnection connection) throws DataAccessException {
+			byte[] rawKey = keySerializer(entity.toId());
+			connection.set(rawKey, valueSerializer(entity));
+			if (cacheStrategy != null) {
+			    cache.put(entity.toId(), entity);
+			}
+			return null;
+		    }
+		}, true);
+		ok = true;
+	    } catch (Exception e) {
+		if (checkConnectException(e)) {
+		    ok = false;
+		} else {
+		    throw e;
+		}
+	    } finally {
+		// 连接失败处理
+		if (!ok && this.storeStrategy.retryDelay() > 0) {
+		    RedisPersistentManager.putAction(RedisSaveOrUpdateAction.of(this, entity, true), this.storeStrategy.retryDelay());
+		}
 	    }
-	    retryElements.put(entity.toId(), entity);
 	}
     }
 
@@ -234,58 +253,20 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    if (cacheStrategy != null) {
 		cache.put(entity.toId(), entity);
 	    }
-
-	    boolean ok = false;
-	    try {
-		redis.execute(new RedisCallback<T>() {
-		    @Override
-		    public T doInRedis(RedisConnection connection) throws DataAccessException {
-			byte[] rawKey = keySerializer(entity.toId());
-			connection.set(rawKey, valueSerializer(entity));
-			return null;
-		    }
-		}, true);
-		ok = true;
-	    } catch (JedisConnectionException e) {
-		ok = false;
-		logger.error("{}", e);
-	    } finally {
-		// 连接失败处理
-		if (!ok) {
-		    synchronized (this) {
-			retryElements.put(entity.toId(), entity);
-		    }
-		}
-	    }
+	    RedisPersistentManager.putAction(RedisSaveOrUpdateAction.of(this, entity, false), this.storeStrategy.delay());
 	}
-    }
-
-    public void handlePersistent() {
-	if (redis.getConnectionFactory().getConnection().isClosed()) {
-	    logger.debug("redis isClosed");
-	    return;
-	}
-	Set<String> removeKeys = null;
-	Map<String, T> saveEntitys = null;
-	synchronized (this) {
-	    saveEntitys = new HashMap<>(retryElements);
-	    removeKeys = new HashSet<>(removeElements);
-	    retryElements.clear();
-	}
-	remove(removeKeys.toArray(new String[0]));
-
-	for (Entry<String, T> entry : saveEntitys.entrySet()) {
-	    saveOrUpdate(entry.getValue());
-	}
-
     }
 
     @Override
     public Set<String> keys(String pattern) {
 	try {
 	    return redis.keys(pattern);
-	} catch (JedisConnectionException e) {
-	    return Collections.emptySet();
+	} catch (Exception e) {
+	    if (checkConnectException(e)) {
+		return Collections.emptySet();
+	    } else {
+		throw e;
+	    }
 	}
     }
 
@@ -298,8 +279,12 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 		result.add(findOne(id));
 	    }
 	    return result;
-	} catch (JedisConnectionException e) {
-	    return Collections.EMPTY_LIST;
+	} catch (Exception e) {
+	    if (checkConnectException(e)) {
+		return Collections.EMPTY_LIST;
+	    } else {
+		throw e;
+	    }
 	}
     }
 
@@ -310,36 +295,54 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	    for (String id : ids) {
 		cb.exec(findOne(id));
 	    }
-	} catch (JedisConnectionException e) {
-
+	} catch (Exception e) {
+	    if (!checkConnectException(e)) {
+		throw e;
+	    }
 	}
     }
 
     @Override
     public void remove(String... keys) {
 	for (String key : keys) {
+	    cache.remove(key);
+	    RedisPersistentManager.putAction(RedisRemoveAction.of(this, key, false), this.storeStrategy.delay());
+	}
+    }
+
+    @Override
+    public void removeSync(String... keys) {
+	for (String key : keys) {
 	    try {
+		cache.remove(key);
 		redis.delete(key);
-		synchronized (this) {
-		    cache.remove(key);
-		}
-	    } catch (JedisConnectionException e) {
-		synchronized (this) {
-		    removeElements.add(key);
+	    } catch (Exception e) {
+		if (checkConnectException(e) && this.storeStrategy.retryDelay() > 0) {
+		    RedisPersistentManager.putAction(RedisRemoveAction.of(this, key, true), this.storeStrategy.retryDelay());
+		} else {
+		    throw e;
 		}
 	    }
 	}
     }
 
+    private boolean checkConnectException(Exception e) {
+	boolean flag = (e instanceof java.net.ConnectException || e instanceof RedisConnectionFailureException || e instanceof JedisConnectionException);
+	if (!flag) {
+	    logger.warn("{}", e);
+	}
+	return flag;
+    }
+
     @Override
-    public synchronized void clearCache(String... keys) {
+    public void clearCache(String... keys) {
 	for (String key : keys) {
 	    cache.remove(key);
 	}
     }
 
     @Override
-    public synchronized void clearAllCache() {
+    public void clearAllCache() {
 	cache.clear();
     }
 
@@ -356,21 +359,19 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	throw new RuntimeException("time out");
     }
 
-    // http://jimgreat.iteye.com/blog/1596058
-    // http://www.tuicool.com/articles/I32IFz
     @Override
     public T tx(String key, TxCallBack<T> callBack) {
 
 	String lockKey = "_clock_" + key;
 	if (lock(lockKey)) {
 	    T entity = null;
-	    entity = findOne(key);
-	    // 开启事务是不能进行任何操作
 	    try {
+		entity = findOne(key);
 		entity = callBack.exec(entity);
+
 	    } finally {
 		if (entity != null) {
-		    saveOrUpdate(entity);
+		    saveOrUpdateSync(entity);
 		}
 		unLock(lockKey);
 	    }
@@ -391,8 +392,6 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
     @Override
     public void destroy() {
-	RedisPersistentManager.unRegister(owner);
-	handlePersistent();
 	if (cf instanceof DisposableBean) {
 	    try {
 		((DisposableBean) cf).destroy();
@@ -513,11 +512,11 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
     }
 
     public Class<T> getEntityClass() {
-        return entityClass;
+	return entityClass;
     }
 
     public String getOwner() {
-        return owner;
+	return owner;
     }
 
 }
