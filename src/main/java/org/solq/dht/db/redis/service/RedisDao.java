@@ -328,8 +328,8 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 
     private boolean checkConnectException(Exception e) {
 	boolean flag = (e instanceof java.net.ConnectException || e instanceof RedisConnectionFailureException || e instanceof JedisConnectionException);
-	if (!flag) {
-	    logger.warn("{}", e);
+	if (flag) {
+	    logger.error("{}", e);
 	}
 	return flag;
     }
