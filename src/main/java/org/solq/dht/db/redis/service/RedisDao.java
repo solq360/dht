@@ -449,26 +449,31 @@ public class RedisDao<T extends IRedisEntity> implements IRedisDao<String, T>, I
 	// 下次请求等侍时间
 	long sleepTime = lockStrategy.sleepTime();
 	// 有效时间
-	long expires = lockStrategy.expires();
+	final long expires = lockStrategy.expires() / 1000;
 	// 最大请求等侍时间
 	final long maxWait = 2 * 1000;
 
-	expires = expires / 1000;
-	final RedisConnection redisConnection = redis.getConnectionFactory().getConnection();
 	final byte[] key = keySerializer(lockKey);
 	int i = 0;
 	while (times-- >= 0) {
+	    Object ok = redis.execute(new RedisCallback<Object>() {
 
-	    // 首次设置成功
-	    // 使用系统自带管理
-	    Object ok = redisConnection.execute(Protocol.Command.SET.name(), key, new byte[] { 0 }, SafeEncoder.encode("EX"), Protocol.toByteArray(expires), SafeEncoder.encode("NX"));
+		@Override
+		public Object doInRedis(RedisConnection connection) throws DataAccessException {
+		    Object _ok = connection.execute(
+			    Protocol.Command.SET.name(),
+			    key, 
+			    new byte[] { 0 }, 
+			    SafeEncoder.encode("EX"), 
+			    Protocol.toByteArray(expires), 
+			    SafeEncoder.encode("NX"));
+
+		    return _ok;
+		}
+	    });
 	    if (ok != null) {
 		return true;
 	    }
-	    // if (redisConnection.setNX(key, new byte[] { 0 })) {
-	    // redisConnection.expire(key, expires);
-	    // return true;
-	    // }
 	    long t = Math.min(maxWait, sleepTime * i);
 	    _await(t);
 	    i++;
